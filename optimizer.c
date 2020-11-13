@@ -289,16 +289,36 @@ void SubOptimizeRecursiveFunction(struct Node *fn, struct Node **np) {
     }
     
     fprintf(stderr, "Arguments of callee RecursiveFunction\n");
-    PrintASTNode(fn->func_type->right->nodes[0]->left);
-    
+    assert(fn->func_type->right->nodes[0]->left != NULL);
+    // PrintASTNode(fn->func_type->right->nodes[0]->left);
 
-    fprintf(stderr, "Found Recursive Return Stmt \n");
+    struct Node* call_expr_list = result_expr->left->arg_expr_list;
+
+    fprintf(stderr, "The arguments is {%.*s}\n", fn->func_type->right->nodes[0]->left->length, fn->func_type->right->nodes[0]->left->begin);
+    fprintf(stderr, "Call arguments is {%.*s}\n", call_expr_list->nodes[0]->op->length, call_expr_list->nodes[0]->op->begin);
+    
+    fprintf(stderr, "r: {%.*s}\n",  result_expr->right->op->length, result_expr->right->op->begin);
+    
+    const int MAX_LEN = 256;
+    char buf[MAX_LEN];
+    
+    // n=n;
+    assert(snprintf(buf, MAX_LEN, "{(%.*s) = (%.*s); _X += (%.*s);}",
+          fn->func_type->right->nodes[0]->left->length, fn->func_type->right->nodes[0]->left->begin,
+          call_expr_list->nodes[0]->op->length, call_expr_list->nodes[0]->op->begin,
+          result_expr->right->op->length, result_expr->right->op->begin
+    )>=0);
+    fprintf(stderr, "%s\n", buf);
+    // _X += 1;
+    
+    *np = CreateStmt(buf);
+    PrintASTNode(*np);
     return;
   }
   if (n->type == kASTList) {
     for (int l = 0; l < GetSizeOfList(n); l++) {
-      struct Node *stmt = GetNodeAt(n, l);
-      SubOptimizeRecursiveFunction(fn, &stmt);
+      struct Node **stmt = GetNodeReferenceAt(n, l);
+      SubOptimizeRecursiveFunction(fn, stmt);
     }
     return;
   }
@@ -320,6 +340,10 @@ void OptimizeRecursiveFunction(struct Node **fnp) {
   struct Node *fn = *fnp;
   assert(fn != NULL);
   assert(fn->type == kASTFuncDef);
+
+  if (GetSizeOfList(fn->func_type->right) != 1) {
+    return;
+  }
 
   if (!IsTailRecursiveFunction(fn, fn->func_body)) {
     return;

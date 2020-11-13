@@ -3,6 +3,7 @@
 const char *symbol_prefix;
 const char *include_path;
 bool is_preprocess_only = false;
+bool should_optimize = true;
 
 _Noreturn void Error(const char *fmt, ...) {
   fflush(stdout);
@@ -52,6 +53,8 @@ static struct Node *ParseCompilerArgs(int argc, char **argv) {
       TestType();
     } else if (strcmp(argv[i], "-E") == 0) {
       is_preprocess_only = true;
+    } else if (strcmp(argv[i], "-O0") == 0) {
+      should_optimize = false;
     } else {
       Error("Unknown argument: %s", argv[i]);
     }
@@ -132,6 +135,12 @@ struct Node *GetNodeAt(struct Node *list, int index) {
   assert(list && list->type == kASTList);
   assert(0 <= index && index < list->size);
   return list->nodes[index];
+}
+
+struct Node **GetNodeReferenceAt(struct Node *list, int index) {
+  assert(list && list->type == kASTList);
+  assert(0 <= index && index < list->size);
+  return &(list->nodes[index]);
 }
 
 struct Node *GetNodeByTokenKey(struct Node *list, struct Node *key) {
@@ -285,8 +294,9 @@ int main(int argc, char *argv[]) {
   struct Node *ast = Parse(&tokens);
   PrintASTNode(ast);
   fputc('\n', stderr);
-
-  Optimize(&ast);
+  if(should_optimize) {
+    Optimize(&ast);
+  }
 
   fputs("Analyze begin\n", stderr);
   struct SymbolEntry *ctx = Analyze(ast);
