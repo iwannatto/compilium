@@ -10,6 +10,10 @@ compare2 : kadai2.old.bin kadai2.bin
 	bash -c "time ./kadai2.old.bin > /dev/null"
 	bash -c "time ./kadai2.bin > /dev/null"
 
+compare3 : kadai3.old.bin kadai3.bin
+	bash -c "time ./kadai3.old.bin > /dev/null"
+	bash -c "time ./kadai3.bin > /dev/null"
+
 run_ctests : ctests.bin ../compilium
 	make run_ctests_hostcc
 	./ctests.bin
